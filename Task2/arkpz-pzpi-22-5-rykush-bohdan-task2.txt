@@ -1,0 +1,1133 @@
+Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+ЗВІТ
+до лабораторної роботи номер 2 з дисципліни
+"Аналіз та рефакторинг коду"
+на тему: " РОЗРОБКА БАЗИ ДАНИХ ДЛЯ СЕРВЕРНОЇ ЧАСТИНИ ПРОГРАМНОЇ СИСТЕМИ ТА ПРИКЛАДНОГО ПРОГРАМНОГО ІНТЕРФЕЙСУ (API)"
+
+
+
+
+Виконала ст. гр ПЗПІ-22-5
+Рикуша Богдана Юрійовича
+
+Перевірив
+ст. викладач кафедри ПІ
+Дашенков Д.С.
+
+
+
+Харків 2024
+
+МЕТА
+	
+Метою роботи є розробити базу даних для серверної частини та прикладного програмного інтерфейсу для програмної системи  управління екологічними даними.
+
+
+ХІД РОБОТИ
+
+Виконання лабораторної роботи почалося з формування UML діаграми прецедентів для програмної системи моніторингу екологічного стану місцевості. Оскільки система має широкий функціонал (включаючи веб-сайт, мобільний додаток та IoT пристрої), діаграма прецедентів була досить великою. З метою спрощення сприйняття її було розбито на декілька частин, які наведено в Додатку А.
+Наступним кроком було побудовано ER діаграму, що описує взаємозв’язки між сутностями системи, такими як користувачі, локації, IoT-пристрої, екологічні дані та звіти. Цю діаграму наведено в Додатку Б. На основі ER діаграми було створено структуру бази даних, яку автоматично сформовано PostgreSQL. Її візуалізацію наведено в Додатку В.
+Далі було розроблено RESTful API для взаємодії між серверною частиною, клієнтами та IoT-пристроями. Для цього також створено OpenAPI специфікацію, яка наведена в Додатку Г. Специфікація написана у форматі YAML і охоплює функціонал первинного випуску системи.
+На основі специфікації було реалізовано API. Приклади коду серверної частини наведено в Додатку Д. Весь вихідний код розміщено на GitHub для публічного доступу.
+
+Інженерні рішення
+Під час розробки API було прийнято наступні інженерні рішення:
+
+Багаторівнева архітектура:
+
+Клієнтська частина: веб-сайт та мобільний додаток, які надсилають HTTP-запити до серверної частини.
+Серверна частина (API): обробляє запити, взаємодіє з базою даних і виконує бізнес-логіку.
+IoT-пристрої: збирають екологічні дані та передають їх на сервер через API.
+СУБД: PostgreSQL для зберігання даних.
+Взаємодія між компонентами реалізована через RESTful API, що забезпечує простоту інтеграції з веб- і мобільними клієнтами та IoT-пристроями.
+
+Технології для серверної частини:
+
+Серверна частина розроблена на Node.js із використанням фреймворку Express, що дозволяє швидко створювати RESTful API та має гнучку підтримку middleware.
+Для роботи з базою даних використовується бібліотека pg (PostgreSQL), яка забезпечує прямий доступ до СУБД.
+Логування та обробка помилок реалізовані за допомогою middleware Express.
+Робота з базою даних:
+
+Для роботи з базою даних використовується PostgreSQL завдяки її продуктивності та підтримці складних запитів.
+Для автоматизації створення бази даних використано скрипти SQL, сформовані на основі ER діаграми.
+Майбутні покращення:
+
+У фінальній версії передбачається інтеграція з хмарними платформами для розгортання (наприклад, AWS або Azure).
+Додаткові функції API будуть реалізовані для аналізу великих обсягів даних із використанням машинного навчання.
+
+ВИСНОВКИ
+Протягом виконання лабораторної роботи було створено UML діаграму прецедентів та ER діаграму для програмної системи моніторингу екологічного стану місцевості. На їх основі створено базу даних, OpenAPI специфікацію, а також реалізовано серверну частину системи.
+Серверна частина розроблена на платформі Node.js із використанням Express. Для роботи з базою даних використовувалася PostgreSQL. Всі компоненти системи побудовані з дотриманням принципів багаторівневої архітектури, що забезпечує масштабованість та інтеграцію з різними клієнтами.
+Система дозволяє зберігати, аналізувати та відображати екологічні дані, а також підтримує функціонал для мобільних додатків, веб-клієнтів та IoT-пристроїв.
+
+ДОДАТОК А
+UML діаграма прецендентів
+Рисунок А – UML Діаграма прецедентів
+ДОДАТОК Б
+ER Діаграма бази даних
+Рисунок Б – ER діаграма бази даних
+ДОДАТОК В
+Діаграма структури бази даних
+Рисунок В – Діаграма структури бази даних
+ДОДАТОК Г
+Специфікація API
+
+openapi: 3.0.0
+info:
+  title: Users API
+  description: API для управління користувачами системи.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+    description: Локальний сервер для розробки
+
+paths:
+  /users:
+    get:
+      summary: Отримати список всіх користувачів
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: Успішно отримано список користувачів
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: "John Doe"
+                    email:
+                      type: string
+                      example: "john.doe@example.com"
+                    role:
+                      type: string
+                      example: "admin"
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2025-01-01T10:00:00Z"
+
+  /users/{id}:
+    get:
+      summary: Отримати інформацію про конкретного користувача
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID користувача
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успішно отримано дані користувача
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "John Doe"
+                  email:
+                    type: string
+                    example: "john.doe@example.com"
+                  role:
+                    type: string
+                    example: "admin"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-01-01T10:00:00Z"
+        '404':
+          description: Користувача не знайдено
+
+  /users:
+    post:
+      summary: Додати нового користувача
+      operationId: addUser
+      requestBody:
+        description: Дані нового користувача
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Jane Doe"
+                email:
+                  type: string
+                  example: "jane.doe@example.com"
+                password:
+                  type: string
+                  example: "securepassword123"
+                role:
+                  type: string
+                  example: "user"
+      responses:
+        '201':
+          description: Користувача створено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    example: 2
+                  name:
+                    type: string
+                    example: "Jane Doe"
+                  email:
+                    type: string
+                    example: "jane.doe@example.com"
+                  role:
+                    type: string
+                    example: "user"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-01-01T10:30:00Z"
+
+  /users/{id}/role:
+    put:
+      summary: Оновити роль користувача
+      operationId: updateUserRole
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID користувача
+          schema:
+            type: integer
+      requestBody:
+        description: Нова роль користувача
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  example: "admin"
+      responses:
+        '200':
+          description: Роль користувача успішно оновлено
+        '404':
+          description: Користувача не знайдено
+
+  /users/{id}:
+    delete:
+      summary: Видалити користувача за ID
+      operationId: deleteUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID користувача
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Користувача успішно видалено
+        '404':
+          description: Користувача не знайдено
+paths:
+  /environmental_data:
+    get:
+      summary: Отримати список всіх екологічних даних
+      operationId: getAllEnvironmentalData
+      responses:
+        '200':
+          description: Успішно отримано список екологічних даних
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    data_id:
+                      type: integer
+                      example: 1
+                    device_id:
+                      type: integer
+                      example: 10
+                    data_type:
+                      type: string
+                      example: "CO2"
+                    value:
+                      type: number
+                      format: float
+                      example: 25.5
+                    timestamp:
+                      type: string
+                      format: date-time
+                      example: "2025-01-02T12:00:00Z"
+
+    post:
+      summary: Додати нові екологічні дані
+      operationId: addEnvironmentalData
+      requestBody:
+        description: Дані для додавання
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: integer
+                  example: 10
+                data_type:
+                  type: string
+                  example: "CO2"
+                value:
+                  type: number
+                  format: float
+                  example: 25.5
+      responses:
+        '201':
+          description: Дані успішно додано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data_id:
+                    type: integer
+                    example: 1
+                  device_id:
+                    type: integer
+                    example: 10
+                  data_type:
+                    type: string
+                    example: "CO2"
+                  value:
+                    type: number
+                    format: float
+                    example: 25.5
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-01-02T12:00:00Z"
+
+  /environmental_data/{id}:
+    delete:
+      summary: Видалити екологічні дані за ID
+      operationId: deleteEnvironmentalDataById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID екологічних даних
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Дані успішно видалено
+        '404':
+          description: Дані не знайдено
+
+  /environmental_data/sorted:
+    get:
+      summary: Отримати екологічні дані, відсортовані за часом
+      operationId: getSortedEnvironmentalData
+      parameters:
+        - name: order
+          in: query
+          description: Порядок сортування (asc або desc)
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Успішно отримано відсортовані екологічні дані
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    data_id:
+                      type: integer
+                      example: 1
+                    device_id:
+                      type: integer
+                      example: 10
+                    data_type:
+                      type: string
+                      example: "CO2"
+                    value:
+                      type: number
+                      format: float
+                      example: 25.5
+                    timestamp:
+                      type: string
+                      format: date-time
+                      example: "2025-01-02T12:00:00Z"
+                      paths:
+  /environmental_data:
+    get:
+      summary: Отримати список всіх екологічних даних
+      operationId: getAllEnvironmentalData
+      responses:
+        '200':
+          description: Успішно отримано список екологічних даних
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    data_id:
+                      type: integer
+                      example: 1
+                    device_id:
+                      type: integer
+                      example: 10
+                    data_type:
+                      type: string
+                      example: "CO2"
+                    value:
+                      type: number
+                      format: float
+                      example: 25.5
+                    timestamp:
+                      type: string
+                      format: date-time
+                      example: "2025-01-02T12:00:00Z"
+
+    post:
+      summary: Додати нові екологічні дані
+      operationId: addEnvironmentalData
+      requestBody:
+        description: Дані для додавання
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: integer
+                  example: 10
+                data_type:
+                  type: string
+                  example: "CO2"
+                value:
+                  type: number
+                  format: float
+                  example: 25.5
+      responses:
+        '201':
+          description: Дані успішно додано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data_id:
+                    type: integer
+                    example: 1
+                  device_id:
+                    type: integer
+                    example: 10
+                  data_type:
+                    type: string
+                    example: "CO2"
+                  value:
+                    type: number
+                    format: float
+                    example: 25.5
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-01-02T12:00:00Z"
+
+  /environmental_data/{id}:
+    delete:
+      summary: Видалити екологічні дані за ID
+      operationId: deleteEnvironmentalDataById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID екологічних даних
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Дані успішно видалено
+        '404':
+          description: Дані не знайдено
+
+  /environmental_data/sorted:
+    get:
+      summary: Отримати екологічні дані, відсортовані за часом
+      operationId: getSortedEnvironmentalData
+      parameters:
+        - name: order
+          in: query
+          description: Порядок сортування (asc або desc)
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Успішно отримано відсортовані екологічні дані
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    data_id:
+                      type: integer
+                      example: 1
+                    device_id:
+                      type: integer
+                      example: 10
+                    data_type:
+                      type: string
+                      example: "CO2"
+                    value:
+                      type: number
+                      format: float
+                      example: 25.5
+                    timestamp:
+                      type: string
+                      format: date-time
+                      example: "2025-01-02T12:00:00Z"
+                      openapi: 3.0.0
+info:
+  title: IoT Devices API
+  description: API для управління IoT-пристроями.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+    description: Локальний сервер для розробки
+
+paths:
+  /iot_devices:
+    post:
+      summary: Додати новий IoT-пристрій
+      operationId: addDevice
+      requestBody:
+        description: Дані для створення нового пристрою
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location_id:
+                  type: integer
+                  example: 2
+                device_type:
+                  type: string
+                  example: "Air Quality Sensor"
+                status:
+                  type: string
+                  example: "active"
+      responses:
+        '201':
+          description: Пристрій успішно додано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device_id:
+                    type: integer
+                    example: 1
+                  location_id:
+                    type: integer
+                    example: 2
+                  device_type:
+                    type: string
+                    example: "Air Quality Sensor"
+                  status:
+                    type: string
+                    example: "active"
+                  last_updated:
+                    type: string
+                    format: date-time
+                    example: "2025-01-02T12:00:00Z"
+
+    get:
+      summary: Отримати список всіх IoT-пристроїв
+      operationId: getAllDevices
+      responses:
+        '200':
+          description: Успішно отримано список пристроїв
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    device_id:
+                      type: integer
+                      example: 1
+                    location_id:
+                      type: integer
+                      example: 2
+                    device_type:
+                      type: string
+                      example: "Air Quality Sensor"
+                    status:
+                      type: string
+                      example: "active"
+                    last_updated:
+                      type: string
+                      format: date-time
+                      example: "2025-01-02T12:00:00Z"
+
+  /iot_devices/{id}:
+    delete:
+      summary: Видалити IoT-пристрій за ID
+      operationId: deleteDeviceById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID пристрою
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Пристрій успішно видалено
+        '404':
+          description: Пристрій не знайдено
+
+  /iot_devices/{id}/status:
+    put:
+      summary: Оновити статус IoT-пристрою
+      operationId: updateDeviceStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID пристрою
+          schema:
+            type: integer
+      requestBody:
+        description: Новий статус пристрою
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: "inactive"
+      responses:
+        '200':
+          description: Статус пристрою успішно оновлено
+        '404':
+          description: Пристрій не знайдено
+paths:
+  /locations:
+    post:
+      summary: Додати нову локацію
+      operationId: addLocation
+      requestBody:
+        description: Дані для створення нової локації
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "City Center"
+                latitude:
+                  type: number
+                  format: float
+                  example: 48.8588443
+                longitude:
+                  type: number
+                  format: float
+                  example: 2.2943506
+      responses:
+        '201':
+          description: Локацію успішно додано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  location_id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "City Center"
+                  latitude:
+                    type: number
+                    format: float
+                    example: 48.8588443
+                  longitude:
+                    type: number
+                    format: float
+                    example: 2.2943506
+
+    get:
+      summary: Отримати список всіх локацій
+      operationId: getAllLocations
+      responses:
+        '200':
+          description: Успішно отримано список локацій
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    location_id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: "City Center"
+                    latitude:
+                      type: number
+                      format: float
+                      example: 48.8588443
+                    longitude:
+                      type: number
+                      format: float
+                      example: 2.2943506
+
+  /locations/{id}:
+    get:
+      summary: Отримати локацію за ID
+      operationId: getLocationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID локації
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успішно отримано дані локації
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  location_id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "City Center"
+                  latitude:
+                    type: number
+                    format: float
+                    example: 48.8588443
+                  longitude:
+                    type: number
+                    format: float
+                    example: 2.2943506
+        '404':
+          description: Локацію не знайдено
+
+    delete:
+      summary: Видалити локацію за ID
+      operationId: deleteLocationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID локації
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Локацію успішно видалено
+        '404':
+          description: Локацію не знайдено
+          paths:
+  /reports:
+    post:
+      summary: Додати новий звіт
+      operationId: addReport
+      requestBody:
+        description: Дані для створення нового звіту
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  example: 1
+                location_id:
+                  type: integer
+                  example: 5
+                report_data:
+                  type: string
+                  example: "Detected high levels of pollution in the area."
+      responses:
+        '201':
+          description: Звіт успішно додано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report_id:
+                    type: integer
+                    example: 10
+                  user_id:
+                    type: integer
+                    example: 1
+                  location_id:
+                    type: integer
+                    example: 5
+                  report_data:
+                    type: string
+                    example: "Detected high levels of pollution in the area."
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-01-02T12:00:00Z"
+
+    get:
+      summary: Отримати список всіх звітів
+      operationId: getAllReports
+      responses:
+        '200':
+          description: Успішно отримано список звітів
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    report_id:
+                      type: integer
+                      example: 10
+                    user_id:
+                      type: integer
+                      example: 1
+                    location_id:
+                      type: integer
+                      example: 5
+                    report_data:
+                      type: string
+                      example: "Detected high levels of pollution in the area."
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2025-01-02T12:00:00Z"
+
+  /reports/{id}:
+    get:
+      summary: Отримати звіт за ID
+      operationId: getReportById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID звіту
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успішно отримано звіт
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report_id:
+                    type: integer
+                    example: 10
+                  user_id:
+                    type: integer
+                    example: 1
+                  location_id:
+                    type: integer
+                    example: 5
+                  report_data:
+                    type: string
+                    example: "Detected high levels of pollution in the area."
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-01-02T12:00:00Z"
+        '404':
+          description: Звіт не знайдено
+
+    delete:
+      summary: Видалити звіт за ID
+      operationId: deleteReportById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID звіту
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Звіт успішно видалено
+        '404':
+          description: Звіт не знайдено
+
+
+          ДОДАТОК Д
+ПРОГРАМНИЙ КОД
+
+
+const express = require('express');
+const usersController = require('./Controllers/usersController');
+const environmentalDataController = require('./Controllers/environmentalDataController');
+const alertsController = require('./Controllers/alertsController');
+const iotDevicesController = require('./Controllers/iotDevicesController');
+const locationsController = require('./Controllers/locationsController');
+const reportsController = require('./Controllers/reportsController');
+
+const app = express();
+app.use(express.json()); // Для роботи з JSON-запитами
+
+// Маршрути для роботи з користувачами
+app.get('/api/users', usersController.getAllUsers);
+app.get('/api/users/:id', usersController.getUserById);
+app.post('/api/users', usersController.addUser);
+app.put('/api/users/:id/role', usersController.updateUserRole);
+app.delete('/api/users/:id', usersController.deleteUserById);
+
+// Маршрути для роботи з Environmental_Data
+app.get('/api/environmental_data', environmentalDataController.getAllEnvironmentalData);
+app.post('/api/environmental_data', environmentalDataController.addEnvironmentalData);
+app.delete('/api/environmental_data/:id', environmentalDataController.deleteEnvironmentalDataById);
+app.get('/api/environmental_data/sorted', environmentalDataController.getSortedEnvironmentalData);
+
+// Маршрути для роботи з alerts
+app.get('/api/alerts', alertsController.getAllAlerts); 
+app.get('/api/alerts/user/:user_id', alertsController.getAlertsByUserId); 
+app.post('/api/alerts', alertsController.addAlert); 
+app.delete('/api/alerts/:id', alertsController.deleteAlertById); 
+
+// Маршрути для роботи з IoT_Devices
+app.post('/api/iot_devices', iotDevicesController.addDevice); 
+app.delete('/api/iot_devices/:id', iotDevicesController.deleteDeviceById);
+app.put('/api/iot_devices/:id/status', iotDevicesController.updateDeviceStatus); 
+app.get('/api/iot_devices', iotDevicesController.getAllDevices); 
+
+// Маршрути для роботи з Locations
+app.post('/api/locations', locationsController.addLocation); 
+app.delete('/api/locations/:id', locationsController.deleteLocationById); 
+app.get('/api/locations', locationsController.getAllLocations); 
+app.get('/api/locations/:id', locationsController.getLocationById); 
+
+// Маршрути для роботи з Reports
+app.post('/api/reports', reportsController.addReport); 
+app.delete('/api/reports/:id', reportsController.deleteReportById); 
+app.get('/api/reports', reportsController.getAllReports); 
+app.get('/api/reports/:id', reportsController.getReportById); 
+
+// Запуск сервера
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Сервер запущено на порту ${PORT}`);
+});
+
+
+const pool = require('../db');
+
+// Отримати всі сповіщення
+const getAllAlerts = async () => {
+    const result = await pool.query('SELECT * FROM Alerts');
+    return result.rows;
+};
+
+// Отримати сповіщення за ID користувача
+const getAlertsByUserId = async (user_id) => {
+    const result = await pool.query('SELECT * FROM Alerts WHERE user_id = $1', [user_id]);
+    return result.rows;
+};
+
+// Додати нове сповіщення
+const addAlert = async (user_id, data_id, alert_type) => {
+    const result = await pool.query(
+        'INSERT INTO Alerts (user_id, data_id, alert_type, timestamp) VALUES ($1, $2, $3, NOW()) RETURNING *',
+        [user_id, data_id, alert_type]
+    );
+    return result.rows[0];
+};
+
+
+
+// Видалити сповіщення за ID
+const deleteAlertById = async (alert_id) => {
+    const result = await pool.query('DELETE FROM Alerts WHERE alert_id = $1 RETURNING *', [alert_id]);
+    return result.rows[0];
+};
+
+module.exports = {
+    getAllAlerts,
+    getAlertsByUserId,
+    addAlert,
+    deleteAlertById,
+};
+
+
+const environmentalDataModel = require('../Models/environmentalDataModel');
+
+// Отримати всі записи
+const getAllEnvironmentalData = async (req, res) => {
+    try {
+        const data = await environmentalDataModel.getAllEnvironmentalData();
+        res.status(200).json(data);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка отримання даних');
+    }
+};
+
+// Додати новий запис
+const addEnvironmentalData = async (req, res) => {
+    const { device_id, data_type, value, timestamp } = req.body;
+    try {
+        const data = await environmentalDataModel.addEnvironmentalData(device_id, data_type, value, timestamp);
+        res.status(201).json(data);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка додавання даних');
+    }
+};
+
+// Видалити запис за ID
+const deleteEnvironmentalDataById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const data = await environmentalDataModel.deleteEnvironmentalDataById(id);
+        if (!data) {
+            return res.status(404).send('Запис не знайдено');
+        }
+        res.status(200).json(data);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка видалення даних');
+    }
+};
+
+// Отримати записи, відсортовані за часом
+const getSortedEnvironmentalData = async (req, res) => {
+    try {
+        const data = await environmentalDataModel.getSortedEnvironmentalData();
+        res.status(200).json(data);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка сортування даних');
+    }
+};
+
+module.exports = {
+    getAllEnvironmentalData,
+    addEnvironmentalData,
+    deleteEnvironmentalDataById,
+    getSortedEnvironmentalData,
+};
+
+
+const iotDevicesModel = require('../Models/iotDevicesModel');
+
+// Додати новий пристрій
+const addDevice = async (req, res) => {
+    const { location_id, device_type, status } = req.body;
+    try {
+        const device = await iotDevicesModel.addDevice(location_id, device_type, status);
+        res.status(201).json(device);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка додавання пристрою');
+    }
+};
+
+// Видалити пристрій за ID
+const deleteDeviceById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const device = await iotDevicesModel.deleteDeviceById(id);
+        if (!device) {
+            return res.status(404).send('Пристрій не знайдено');
+        }
+        res.status(200).json(device);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка видалення пристрою');
+    }
+};
+
+// Оновити статус пристрою
+const updateDeviceStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    try {
+        const device = await iotDevicesModel.updateDeviceStatus(id, status);
+        if (!device) {
+            return res.status(404).send('Пристрій не знайдено');
+        }
+        res.status(200).json(device);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка оновлення статусу пристрою');
+    }
+};
+
+// Отримати всі пристрої
+const getAllDevices = async (req, res) => {
+    try {
+        const devices = await iotDevicesModel.getAllDevices();
+        res.status(200).json(devices);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Помилка отримання пристроїв');
+    }
+};
+
+module.exports = {
+    addDevice,
+    deleteDeviceById,
+    updateDeviceStatus,
+    getAllDevices,
+};
+
+ДОДАТОК Е
+ВІДЕО НА ЮТУБ
