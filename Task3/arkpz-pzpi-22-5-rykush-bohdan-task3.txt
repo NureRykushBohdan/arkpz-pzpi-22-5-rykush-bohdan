@@ -30,6 +30,277 @@
 2 ХІД РОБОТИ
 
 В ході виконання лабораторної роботи було реалізовано наступну бізнес логіку (опис інженерних рішень):
+-   Інтеграція з Gmail API для відправки листів на електронну пошту користувачів (потрібна відладка)
 –	Реалізація Middleware для роботи з сесіями, зберігання поточного авторизованого користувача та обмеження доступу до функціональності платформи в залежності від ролі користувача;
 –	Хешування паролю за технологією SHA256 для його безпечнішого зберігання в базі даних;
+–	Бізнес логіка пов’язана із адмініструванням системи (створення резервної копії бази даних та можлиаості її відновлення вручну ).
+
+ВИСНОВКИ
+
+Протягом лабораторної роботи було розроблено бізнес-логіку та функції адміністрування серверної частини програмної системи.
+Протягом лабораторної роботи також було створено UML діаграми діяльності та взаємодії (послідовності).
+
+UML-діаграма діяльності для серверної частини
+
+
+
+
+
+Рисунок А – UML-діаграма діяльності для серверної частини
+
+
+
+
+
+
+
+
+
+
+
+ДОДАТОК Б
+
+UML діаграма взаємодії для серверної частини
+
+
+
+
+
+Рисунок Б – UML діаграма взаємодії для серверної частини
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ДОДАТОК В
+Приклад програмного коду
+
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config(); // Завантаження змінних із .env
+
+const BACKUP_DIR = path.join(__dirname, 'backups');
+
+// Перевірка існування каталогу для резервних копій
+if (!fs.existsSync(BACKUP_DIR)) {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+}
+
+// Абсолютний шлях до pg_dump
+const PG_DUMP_PATH = `"C:\\Program Files\\PostgreSQL\\17\\bin\\pg_dump"`;
+
+// Функція для створення резервної копії
+function createBackup() {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(BACKUP_DIR, `backup-${timestamp}.sql`);
+
+    // Змінні з .env
+    const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+
+    // Додати пароль до змінної середовища
+    const env = { ...process.env, PGPASSWORD: DB_PASSWORD };
+
+    const command = `${PG_DUMP_PATH} -U ${DB_USER} -h ${DB_HOST} -p ${DB_PORT} -d ${DB_NAME} -F c -f "${backupFile}"`;
+
+    return new Promise((resolve, reject) => {
+        exec(command, { env }, (error, stdout, stderr) => {
+            if (error) {
+                return reject(`Помилка створення резервної копії: ${stderr}`);
+            }
+            resolve(`Резервна копія створена: ${backupFile}`);
+        });
+    });
+}
+
+module.exports = { createBackup };
+
+const path = require('path');
+const fs = require('fs');
+const { createBackup, restoreBackup } = require('./databaseBackup');
+
+// Створення резервної копії
+async function backupDatabase(req, res) {
+    try {
+        const result = await createBackup();
+        res.status(200).json({ message: result });
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+}
+
+// Відновлення бази даних
+async function restoreDatabase(req, res) {
+    const backupFile = path.join(__dirname, 'backups', req.body.filename);
+
+    if (!fs.existsSync(backupFile)) {
+        return res.status(400).json({ error: 'Файл резервної копії не знайдено.' });
+    }
+
+    try {
+        const result = await restoreBackup(backupFile);
+        res.status(200).json({ message: result });
+    } catch (error) {
+        res.status(500).json({ error });
+    }
+}
+
+module.exports = { backupDatabase, restoreDatabase };
+
+const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
+const fs = require('fs');
+const path = require('path');
+
+const TOKEN_PATH = path.join(__dirname, 'token.json');
+const CREDENTIALS_PATH = path.join(__dirname, 'client_secret_540098223058-vld9qt9ku18gd1kftnll8rdl5dio7avm.apps.googleusercontent.com (1).json');
+
+async function loadCredentials() {
+    if (!fs.existsSync(CREDENTIALS_PATH)) {
+        throw new Error('Файл облікових даних (client_secret.json) не знайдено. Перевірте шлях до файлу.');
+    }
+    return JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+}
+
+async function loadToken() {
+    if (!fs.existsSync(TOKEN_PATH)) {
+        throw new Error('Файл токена (token.json) не знайдено. Виконайте авторизацію через getToken.js.');
+    }
+    return JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+}
+
+async function createTransporter() {
+    try {
+        const credentials = await loadCredentials();
+        const { client_id, client_secret, redirect_uris } = credentials.web;
+
+        const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+
+        const token = await loadToken();
+        oAuth2Client.setCredentials(token);
+
+        // Перевіряємо і поновлюємо access_token, якщо прострочений
+        if (new Date() > new Date(token.expiry_date)) {
+            const newToken = await oAuth2Client.getAccessToken();
+            token.access_token = newToken.token;
+            fs.writeFileSync(TOKEN_PATH, JSON.stringify(token));
+            console.log('Токен поновлено і збережено.');
+        }
+
+        return nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                type: 'OAuth2',
+                user: 'bogdan20001000@gmail.com',
+                clientId: client_id,
+                clientSecret: client_secret,
+                refreshToken: token.refresh_token,
+                accessToken: token.access_token,
+            },
+            debug: true, // Додаткові логи
+        });
+    } catch (error) {
+        console.error('Помилка при створенні транспортера:', error.message);
+        throw error;
+    }
+}
+
+
+async function sendMail(to, subject, text) {
+    try {
+        const transporter = await createTransporter();
+        const mailOptions = {
+            from: 'bogdan20001000@gmail.com',
+            to,
+            subject,
+            text,
+        };
+        const result = await transporter.sendMail(mailOptions);
+        console.log('Лист успішно надіслано:', result);
+    } catch (error) {
+        console.error('Помилка надсилання листа:', error.message);
+    }
+}
+
+module.exports = { sendMail };
+
+
+module.exports = { sendMail };
+const fs = require('fs');
+const readline = require('readline');
+const { google } = require('googleapis');
+
+const CREDENTIALS_PATH = 'client_secret_540098223058-vld9qt9ku18gd1kftnll8rdl5dio7avm.apps.googleusercontent.com (1).json';
+const TOKEN_PATH = './token.json';
+
+async function generateToken() {
+    try {
+        // Завантаження облікових даних
+        if (!fs.existsSync(CREDENTIALS_PATH)) {
+            throw new Error(`Файл облікових даних (${CREDENTIALS_PATH}) не знайдено.`);
+        }
+        const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
+        const { client_id, client_secret, redirect_uris } = credentials.web;
+
+        const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+
+        // Генерація посилання на авторизацію
+        const authUrl = oAuth2Client.generateAuthUrl({
+            access_type: 'offline', // Забезпечує отримання refresh_token
+            scope: ['https://www.googleapis.com/auth/gmail.send'],
+        });
+
+        console.log('Перейдіть за наступним посиланням, щоб авторизувати доступ:');
+        console.log(authUrl);
+
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+        });
+
+        // Отримання коду авторизації
+        rl.question('Введіть код з авторизації тут: ', async (code) => {
+            rl.close();
+            try {
+                const { tokens } = await oAuth2Client.getToken(code);
+                oAuth2Client.setCredentials(tokens);
+
+                if (!tokens.refresh_token) {
+                    throw new Error('Не отримано refresh_token. Видаліть доступ у Google Account Permissions і спробуйте знову.');
+                }
+
+                // Збереження токена
+                fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
+                console.log('Токен успішно збережено до', TOKEN_PATH);
+                console.log('Отриманий токен:', tokens);
+            } catch (error) {
+                console.error('Помилка при отриманні токена:', error.message);
+            }
+        });
+    } catch (error) {
+        console.error('Помилка ініціалізації:', error.message);
+    }
+}
+
+generateToken();
+
+ДОДАТОК Г
+ВІДЕО НА ЮТУБ
 

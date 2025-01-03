@@ -1,9 +1,12 @@
 const express = require('express');
 const session = require('express-session');
 const { sendMail } = require('./gmailService');
+const bodyParser = require('body-parser');
 
 
 
+
+const { backupDatabase, restoreDatabase } = require('./adminController');
 const usersController = require('./Controllers/usersController');
 const { authenticateMiddleware, roleMiddleware } = require('./middleware/auth');
 const environmentalDataController = require('./Controllers/environmentalDataController');
@@ -13,6 +16,7 @@ const locationsController = require('./Controllers/locationsController');
 const reportsController = require('./Controllers/reportsController');
 
 const app = express();
+app.use(bodyParser.json());
 app.use(express.json()); // Для роботи з JSON-запитами
 
 
@@ -25,10 +29,11 @@ const fs = require('fs');
 const { google } = require('googleapis');
 const path = require('path');
 
-const CLIENT_SECRET_PATH = path.join(__dirname, 'client_secret_540098223058-j6mm8h3fg5t856tvi3n4hkqdkn752stq.apps.googleusercontent.com (2).json');
+const CLIENT_SECRET_PATH = path.join(__dirname, 'client_secret_540098223058-vld9qt9ku18gd1kftnll8rdl5dio7avm.apps.googleusercontent.com (1).json');
 
 const credentials = JSON.parse(fs.readFileSync(CLIENT_SECRET_PATH, 'utf-8'));
-const { client_id, client_secret, redirect_uris } = credentials.installed;
+const { client_id, client_secret, redirect_uris } = credentials.web;
+
 
 
 const oAuth2Client = new google.auth.OAuth2(
@@ -42,8 +47,9 @@ sendMail('bohdan.rykush@nure.ua', 'Тест', 'Це тестове повідо�
     .then(() => console.log('Лист надіслано!'))
     .catch(err => console.error('Помилка:', err));
 
-
-
+//database
+app.post('/api/backup', backupDatabase);
+app.post('/api/restore', restoreDatabase);
 
 // Маршрути для роботи з користувачами
 app.get('/api/users', usersController.getAllUsers);
